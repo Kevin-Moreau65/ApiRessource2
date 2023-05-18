@@ -117,7 +117,7 @@ namespace ApiRessource2.Controllers
 
 
             if (string.IsNullOrEmpty(comment.Content))
-                return BadRequest("Le contenu du commentaire est obligatoire.");
+                return BadRequest(new { message = "Le contenu du commentaire est obligatoire." });
 
             User user = (User)HttpContext.Items["User"];
             Comment newComment = new Comment();

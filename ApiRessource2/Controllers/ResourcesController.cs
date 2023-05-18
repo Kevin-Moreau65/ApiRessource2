@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using ApiRessource2.Helpers;
+using ApiRessource2.Models;
+using ApiRessource2.Models.Filter;
+using ApiRessource2.Models.Wrapper;
+using ApiRessource2.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ApiRessource2;
-using ApiRessource2.Models;
-using ApiRessource2.Models.Wrapper;
-using ApiRessource2.Models.Filter;
-using ApiRessource2.Helpers;
-using ApiRessource2.Services;
-using NuGet.Packaging;
+using System.Net;
 
 namespace ApiRessource2.Controllers
 {
@@ -28,8 +22,7 @@ namespace ApiRessource2.Controllers
             this.uriService = uriService;
         }
 
-        //TODO route upvote et downvote 
-
+        //TODO route upvote et downvote
 
         // GET: api/Resources
         [HttpGet]
@@ -45,14 +38,13 @@ namespace ApiRessource2.Controllers
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
                    .AsQueryable();
-                
 
-                if(search != "" && search != null)
+                if (search != "" && search != null)
                 {
-                    query = query.Where(r=>r.Title.ToLower().Contains(search.ToLower()) || r.Description.ToLower().Contains(search.ToLower())).AsQueryable();
+                    query = query.Where(r => r.Title.ToLower().Contains(search.ToLower()) || r.Description.ToLower().Contains(search.ToLower())).AsQueryable();
                 }
 
-                if(triType == TriType.Alphabetique)
+                if (triType == TriType.Alphabetique)
                 {
                     resource = await query.OrderBy(q => q.Title).ToListAsync();
                 }
@@ -62,7 +54,7 @@ namespace ApiRessource2.Controllers
                 }
                 if (triType == TriType.DateAsc)
                 {
-                    resource = await query.OrderBy(q => q.CreationDate.Date).ThenBy(q=>q.CreationDate.TimeOfDay).ToListAsync();
+                    resource = await query.OrderBy(q => q.CreationDate.Date).ThenBy(q => q.CreationDate.TimeOfDay).ToListAsync();
                 }
                 if (triType == TriType.DateDesc)
                 {
@@ -72,17 +64,15 @@ namespace ApiRessource2.Controllers
                 {
                     item.User = new User() { Id = item.User.Id, Role = item.User.Role, Username = item.User.Username };
                 }
-                
+
                 var totalRecords = resource.Count();
                 var pagedReponse = PaginationHelper.CreatePagedReponse<Resource>(resource, validFilter, totalRecords, uriService, route);
                 return Ok(pagedReponse);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
-            
-            
         }
 
         // GET: api/Resources/5
@@ -91,16 +81,14 @@ namespace ApiRessource2.Controllers
         {
             try
             {
-                var resource = await _context.Resources.Where(r=>r.Id == id)
-                    .Include(r=>r.Comments).ThenInclude(c=>c.User)
-                    .Include(r=>r.User)
+                var resource = await _context.Resources.AsNoTracking().Where(r => r.Id == id)
+                    .Include(r => r.Comments).ThenInclude(c => c.User)
+                    .Include(r => r.User)
                     //.Include(r=>r.Voted)
                     .FirstOrDefaultAsync();
                 if (resource == null)
                 {
-                    string[] errorList = new string[] { $"La ressource {id} n'a pas été trouvée ou n'existe pas." };
-                    Response<Resource> responseNotFound = new(null, $"La ressource {id} n'a pas été trouvée ou n'existe pas.");
-                    return NotFound(responseNotFound);
+                    return NotFound(new { message = $"La ressource {id} n'a pas été trouvée ou n'existe pas." });
                 }
 
                 User usertoreturn = new User()
@@ -114,6 +102,8 @@ namespace ApiRessource2.Controllers
                 User user = (User)HttpContext.Items["User"];
                 if (user != null)
                 {
+                    await _context.Consultations.AddAsync(new Consultation { Date = DateTime.Now, RessourceId = id, UserId = user.Id });
+                    await _context.SaveChangesAsync();
                     Voted voted = await _context.Voteds
                                         .Where(v => v.ResourceId == resource.Id)
                                         .Where(v => v.UserId == user.Id)
@@ -133,22 +123,15 @@ namespace ApiRessource2.Controllers
                         resource.Favoris = favoris;
                     }
                 }
-                
-
                 Response<Resource> response = new(resource, $"La ressource {id} a été trouvée.");
                 return Ok(response);
-
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Response<Resource> response = new(null, ex.Message);
                 return BadRequest(response);
             }
-            
         }
-
-
-
 
         // PUT: api/Resources/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -159,19 +142,14 @@ namespace ApiRessource2.Controllers
             User user = (User)HttpContext.Items["User"];
             var resource = await _context.Resources.FindAsync(id);
 
-            if(user.Id != resource.UserId )
+            if (user.Id != resource.UserId)
             {
                 return BadRequest("Impossible de modifier cette ressource.");
             }
 
             if (resource == null)
             {
-                return NotFound("Le commentaire n'a pas été trouvé.");
-            }
-
-            if(postresource == null)
-            {
-                return BadRequest("Il manque des champs dans le formulaire.");
+                return NotFound("La ressource n'a pas été trouvé.");
             }
 
             // Mettre à jour les propriétés du commentaire existant avec les nouvelles valeurs
@@ -186,14 +164,11 @@ namespace ApiRessource2.Controllers
                 await _context.SaveChangesAsync();
                 return Ok();
             }
-            catch 
+            catch
             {
                 return BadRequest();
             }
-
-
         }
-
 
         // POST: api/Resources
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -240,124 +215,108 @@ namespace ApiRessource2.Controllers
                 return NoContent();
             }
             return NoContent();
-            
         }
-
 
         // PUT: api/Resources/5/upvote
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [Authorize]
         [HttpPut("{id}/upvote")]
-        public async Task<IActionResult> upvote(int id)
+        public async Task<IActionResult> Upvote(int id)
         {
             User user = (User)HttpContext.Items["User"];
-            if (id == null || id == 0 || user.Id == null || user.Id == 0)
+            if (user == null)
             {
-                return BadRequest("La ressource est introuvable.");
+                return BadRequest(new { message = "La ressource est introuvable." });
             }
-
-
-            var voted = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
-            if (voted == null)
+            try
             {
                 var resourceToUpdate = await _context.Resources.FindAsync(id);
 
                 if (resourceToUpdate == null)
                 {
-                    return NotFound("La ressource est introuvable.");
+                    return BadRequest(new { message = "La ressource est introuvable." });
                 }
 
-                resourceToUpdate.UpVote++;
-                voted = new Voted
+                var voted = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
+                if (voted == null || voted.Type == "downvote")
                 {
-                    ResourceId = id,
-                    UserId = user.Id,
-                    Type = "upvote"
-                };
-                _context.Voteds.Add(voted);
-                _context.Update(resourceToUpdate);
-
-
-
-                try
-                {
+                    if (voted.Type == "downvote")
+                    {
+                        _context.Remove(voted);
+                        resourceToUpdate.DownVote--;
+                    }
+                    resourceToUpdate.UpVote++;
+                    voted = new Voted
+                    {
+                        ResourceId = id,
+                        UserId = user.Id,
+                        Type = "upvote"
+                    };
+                    _context.Voteds.Add(voted);
+                    _context.Update(resourceToUpdate);
                     await _context.SaveChangesAsync();
                 }
-                catch (DbUpdateConcurrencyException)
+                if (voted.Type == "upvote")
                 {
-
+                    return BadRequest(new {Message = "Vous avez déjà upvoter pour la ressource" });
                 }
+                return NoContent();
             }
-            else
+            catch (DbUpdateConcurrencyException ex)
             {
-                return BadRequest("Vous avez deja donner votre avis sur cette ressource.");
+                throw new System.Web.Http.HttpResponseException(HttpStatusCode.InternalServerError);
             }
-
-
-
-            return NoContent();
         }
-
-
 
         // PUT: api/Resources/5/upvote/
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [Authorize]
         [HttpPut("{id}/downvote")]
-        public async Task<IActionResult> downvote(int id)
+        public async Task<IActionResult> Downvote(int id)
         {
             User user = (User)HttpContext.Items["User"];
-            if (id == null || id == 0 || user.Id == null || user.Id == 0)
+            if (user == null)
             {
-                return BadRequest("La ressource est introuvable.");
+                return BadRequest(new { message = "La ressource est introuvable." });
             }
-            
-            
-            var voted = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
-            if (voted == null)
+            try
             {
                 var resourceToUpdate = await _context.Resources.FindAsync(id);
 
                 if (resourceToUpdate == null)
                 {
-                    return NotFound("La ressource est introuvable.");
+                    return BadRequest(new { message = "La ressource est introuvable." });
                 }
 
-                resourceToUpdate.DownVote++;
-                voted = new Voted
+                var voted = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
+                if (voted == null || voted.Type == "upvote")
                 {
-                    ResourceId = id,
-                    UserId = user.Id,
-                    Type = "downvote"
-                };
-                _context.Voteds.Add(voted);
-                _context.Update(resourceToUpdate);
-
-
-
-                try
-                {
+                    if (voted.Type == "upvote")
+                    {
+                        _context.Remove(voted);
+                        resourceToUpdate.UpVote--;
+                    }
+                    resourceToUpdate.DownVote++;
+                    voted = new Voted
+                    {
+                        ResourceId = id,
+                        UserId = user.Id,
+                        Type = "downvote"
+                    };
+                    _context.Voteds.Add(voted);
+                    _context.Update(resourceToUpdate);
                     await _context.SaveChangesAsync();
                 }
-                catch (DbUpdateConcurrencyException)
+                if (voted.Type == "downvote")
                 {
-
+                    return BadRequest(new { Message = "Vous avez déjà downvoter pour la ressource" });
                 }
+                return NoContent();
             }
-            else
+            catch (DbUpdateConcurrencyException ex)
             {
-                return BadRequest("Vous avez deja donner votre avis sur cette ressource.");
+                throw new System.Web.Http.HttpResponseException(HttpStatusCode.InternalServerError);
             }
-
-
-
-            return NoContent();
-        }
-
-
-        private bool ResourceExists(int id)
-        {
-            return _context.Resources.Any(e => e.Id == id);
         }
     }
 }

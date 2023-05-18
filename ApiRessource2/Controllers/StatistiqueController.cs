@@ -19,17 +19,17 @@ namespace ApiRessource2.Controllers
         }
 
         // GET: StatistiqueController
-        [HttpGet("nbconsulatationlasmonth")]
-        public async Task<ActionResult<int>> NbRessourceConsulteLastMonth()
+        [HttpGet("consultation/lastmonth")]
+        public async Task<ActionResult<Result<int>>> NbRessourceConsulteLastMonth()
         {
             List<int> list = new List<int>();
             DateTime lastmonth = DateTime.Now.AddDays(-29);
             List<Consultation> lstConsultation = await _context.Consultations.Where(objet => objet.Date >= lastmonth && objet.Date <= DateTime.Now).ToListAsync();
-            return Ok(lstConsultation.Count);
+            return Ok(new Result<int>() { Data = lstConsultation.Count });
         }
 
-        [HttpGet("nbconsulatationlasmonthperday")]
-        public async Task<ActionResult<IEnumerable<int>>> NbRessourceConsulteLastMonthPerDay()
+        [HttpGet("consultation/lastmonthperday")]
+        public async Task<ActionResult<Result<IEnumerable<int>>>> NbRessourceConsulteLastMonthPerDay()
         {
             List<int> list = new List<int>();
             DateTime lastmonth = DateTime.Now.AddDays(-29);
@@ -51,7 +51,7 @@ namespace ApiRessource2.Controllers
                 tableauNombreDates.Add(nombreDates);
                 jourCourant = jourCourant.AddDays(1);
             }
-            return Ok(tableauNombreDates);
+            return Ok(new Result<IEnumerable<int>>() { Data = tableauNombreDates });
         }
     }
 }

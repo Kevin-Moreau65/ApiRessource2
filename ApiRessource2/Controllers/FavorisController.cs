@@ -108,7 +108,7 @@ namespace ApiRessource2.Controllers
             var isOwner = favoris.UserId == userId;
 
             if (!isModerator && !isOwner)
-                return Unauthorized("Vous n'êtes pas autorisé à modifier ce commentaire.");
+                return Unauthorized(new { message = "Vous n'êtes pas autorisé à modifier ce commentaire." });
 
             return null;
         }
