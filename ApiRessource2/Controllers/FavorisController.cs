@@ -67,6 +67,21 @@ namespace ApiRessource2.Controllers
             await _context.SaveChangesAsync();
             return Ok(favoris);
         }
+        [HttpDelete("cancel/{id}")]
+        [Authorize]
+        public async Task<ActionResult<Favoris>> CancelFavoris(int id)
+        {
+            User user = (User)HttpContext.Items["User"];
+            var userId = user.Id;
+            Favoris? fav = await _context.Favoris.FirstOrDefaultAsync((f) => f.UserId == userId && f.ResourceId == id);
+            if (fav == null)
+            {
+                return BadRequest(new { Message = "Cette ressource n'est pas en favoris." });
+            }
+            _context.Favoris.Remove(fav);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
 
 
         // DELETE: api/Favoris/5

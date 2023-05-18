@@ -237,16 +237,16 @@ namespace ApiRessource2.Controllers
                     return BadRequest(new { message = "La ressource est introuvable." });
                 }
 
-                var voted = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
-                if (voted == null || voted.Type == "downvote")
+                var currentVote = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
+                if (currentVote == null || currentVote.Type == "downvote")
                 {
-                    if (voted.Type == "downvote")
+                    if (currentVote != null && currentVote.Type == "downvote")
                     {
-                        _context.Remove(voted);
+                        _context.Remove(currentVote);
                         resourceToUpdate.DownVote--;
                     }
                     resourceToUpdate.UpVote++;
-                    voted = new Voted
+                    var voted = new Voted
                     {
                         ResourceId = id,
                         UserId = user.Id,
@@ -256,7 +256,7 @@ namespace ApiRessource2.Controllers
                     _context.Update(resourceToUpdate);
                     await _context.SaveChangesAsync();
                 }
-                if (voted.Type == "upvote")
+                else if (currentVote.Type == "upvote")
                 {
                     return BadRequest(new {Message = "Vous avez déjà upvoter pour la ressource" });
                 }
@@ -288,16 +288,16 @@ namespace ApiRessource2.Controllers
                     return BadRequest(new { message = "La ressource est introuvable." });
                 }
 
-                var voted = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
-                if (voted == null || voted.Type == "upvote")
+                var currentVote = await _context.Voteds.Where(v => v.UserId == user.Id).Where(v => v.ResourceId == id).FirstOrDefaultAsync();
+                if (currentVote == null || currentVote.Type == "upvote")
                 {
-                    if (voted.Type == "upvote")
+                    if (currentVote != null && currentVote.Type == "upvote")
                     {
-                        _context.Remove(voted);
+                        _context.Remove(currentVote);
                         resourceToUpdate.UpVote--;
                     }
                     resourceToUpdate.DownVote++;
-                    voted = new Voted
+                    var voted = new Voted
                     {
                         ResourceId = id,
                         UserId = user.Id,
@@ -307,7 +307,7 @@ namespace ApiRessource2.Controllers
                     _context.Update(resourceToUpdate);
                     await _context.SaveChangesAsync();
                 }
-                if (voted.Type == "downvote")
+                else if(currentVote.Type == "downvote")
                 {
                     return BadRequest(new { Message = "Vous avez déjà downvoter pour la ressource" });
                 }
@@ -317,6 +317,24 @@ namespace ApiRessource2.Controllers
             {
                 throw new System.Web.Http.HttpResponseException(HttpStatusCode.InternalServerError);
             }
+        }
+        [HttpDelete("{id}/cancelVote")]
+        [Authorize]
+        public async Task<ActionResult<Favoris>> CancelVote(int id)
+        {
+            User user = (User)HttpContext.Items["User"];
+            var userId = user.Id;
+            Voted? voted = await _context.Voteds.FirstOrDefaultAsync((f) => f.UserId == userId && f.ResourceId == id);
+            if (voted == null)
+            {
+                return BadRequest(new { Message = "Cette ressource n'est pas voté." });
+            }
+            var ressource = await _context.Resources.FirstOrDefaultAsync((f) => f.Id == id);
+            if (voted.Type == "upvote") ressource.UpVote--;
+            else ressource.DownVote--;
+            _context.Voteds.Remove(voted);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

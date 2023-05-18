@@ -9,6 +9,12 @@ namespace ApiRessource2.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    public class ConsultationPerDay
+    {
+        public DateTime Date { get; set; }
+        public int Number { get; set; }
+    }
+
     public class StatistiqueController : ControllerBase
     {
         private readonly DataContext _context;
@@ -29,7 +35,7 @@ namespace ApiRessource2.Controllers
         }
 
         [HttpGet("consultation/lastmonthperday")]
-        public async Task<ActionResult<Result<IEnumerable<int>>>> NbRessourceConsulteLastMonthPerDay()
+        public async Task<ActionResult<Result<IEnumerable<ConsultationPerDay>>>> NbRessourceConsulteLastMonthPerDay()
         {
             List<int> list = new List<int>();
             DateTime lastmonth = DateTime.Now.AddDays(-29);
@@ -41,17 +47,17 @@ namespace ApiRessource2.Controllers
             DateTime premierJour = dernierJour.AddDays(-29);
 
             // Créer le tableau du nombre de dates par jour
-            var tableauNombreDates = new List<int>();
+            var tableauNombreDates = new List<ConsultationPerDay>();
 
             // Parcourir les jours entre le premier et le dernier jour
             DateTime jourCourant = premierJour;
             while (jourCourant <= dernierJour)
             {
                 int nombreDates = lstConsultation.Count(c => c.Date.Date == jourCourant);
-                tableauNombreDates.Add(nombreDates);
+                tableauNombreDates.Add(new ConsultationPerDay { Date= jourCourant, Number= nombreDates});
                 jourCourant = jourCourant.AddDays(1);
             }
-            return Ok(new Result<IEnumerable<int>>() { Data = tableauNombreDates });
+            return Ok(new Result<IEnumerable<ConsultationPerDay>>() { Data = tableauNombreDates });
         }
     }
 }
