@@ -9,6 +9,7 @@
 
 
         public virtual Resource Resource { get; set; }
+        public virtual User User { get; set; }
     }
 }
 

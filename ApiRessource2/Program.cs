@@ -22,7 +22,7 @@ namespace ApiRessource2
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
+            builder.Services.AddCors();
             builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
             builder.Services.AddScoped<IUserService, UserService>();
             
@@ -51,7 +51,13 @@ namespace ApiRessource2
             });
 
             var app = builder.Build();
-
+            app.UseCors(builder =>
+            {
+                builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+            });
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -69,14 +75,6 @@ namespace ApiRessource2
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
-            app.UseCors(builder =>
-            {
-                builder
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader();
-            });
             
             app.UseHttpsRedirection();
 

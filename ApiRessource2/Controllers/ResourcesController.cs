@@ -37,6 +37,7 @@ namespace ApiRessource2.Controllers
                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
+                   .Include(r => r.Categorie)
                    .AsQueryable();
 
                 if (search != "" && search != null)
@@ -81,8 +82,8 @@ namespace ApiRessource2.Controllers
         {
             try
             {
-                var resource = await _context.Resources.AsNoTracking().Where(r => r.Id == id)
-                    .Include(r => r.Comments).ThenInclude(c => c.User)
+                var resource = await _context.Resources.AsNoTracking().Where(r => r.Id == id).Include(r => r.Categorie)
+                    .Include(r => r.Comments.Where(c => !c.IsDeleted)).ThenInclude(c => c.User)
                     .Include(r => r.User)
                     //.Include(r=>r.Voted)
                     .FirstOrDefaultAsync();
@@ -102,7 +103,7 @@ namespace ApiRessource2.Controllers
                 User user = (User)HttpContext.Items["User"];
                 if (user != null)
                 {
-                    await _context.Consultations.AddAsync(new Consultation { Date = DateTime.Now, RessourceId = id, UserId = user.Id });
+                    await _context.Consultations.AddAsync(new Consultation { Date = DateTime.Now, ResourceId = id, UserId = user.Id });
                     await _context.SaveChangesAsync();
                     Voted voted = await _context.Voteds
                                         .Where(v => v.ResourceId == resource.Id)
@@ -142,7 +143,7 @@ namespace ApiRessource2.Controllers
             User user = (User)HttpContext.Items["User"];
             var resource = await _context.Resources.FindAsync(id);
 
-            if (user.Id != resource.UserId)
+            if (user.Id != resource.UserId && user.Role != Role.Administrator && user.Role != Role.SuperAdministrator)
             {
                 return BadRequest("Impossible de modifier cette ressource.");
             }
@@ -152,11 +153,11 @@ namespace ApiRessource2.Controllers
                 return NotFound("La ressource n'a pas été trouvé.");
             }
 
-            // Mettre à jour les propriétés du commentaire existant avec les nouvelles valeurs
+            // Mettre à jour les propriétés de la ressource existante avec les nouvelles valeurs
             resource.Title = postresource.Title;
             resource.Description = postresource.Description;
             resource.Path = postresource.Path;
-            resource.Type = postresource.Type;
+            resource.CategorieId = postresource.CategorieId;
 
             try
             {
@@ -186,7 +187,7 @@ namespace ApiRessource2.Controllers
                 IsDeleted = false,
                 UpVote = 0,
                 DownVote = 0,
-                Type = postresource.Type,
+                CategorieId = postresource.CategorieId,
                 UserId = user.Id
             };
             _context.Resources.Add(resource);
@@ -264,6 +265,11 @@ namespace ApiRessource2.Controllers
             }
             catch (DbUpdateConcurrencyException ex)
             {
+                throw new System.Web.Http.HttpResponseException(HttpStatusCode.InternalServerError);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
                 throw new System.Web.Http.HttpResponseException(HttpStatusCode.InternalServerError);
             }
         }

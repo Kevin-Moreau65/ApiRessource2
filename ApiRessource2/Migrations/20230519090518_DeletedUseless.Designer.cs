@@ -3,6 +3,7 @@ using System;
 using ApiRessource2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,36 +11,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApiRessource2.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20230519090518_DeletedUseless")]
+    partial class DeletedUseless
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "6.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
-
-            modelBuilder.Entity("ApiRessource2.Models.Categorie", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Categories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Texte"
-                        });
-                });
 
             modelBuilder.Entity("ApiRessource2.Models.Comment", b =>
                 {
@@ -81,17 +61,13 @@ namespace ApiRessource2.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("ResourceId")
+                    b.Property<int>("RessourceId")
                         .HasColumnType("int");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ResourceId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Consultations");
                 });
@@ -113,8 +89,6 @@ namespace ApiRessource2.Migrations
                     b.HasIndex("ResourceId")
                         .IsUnique();
 
-                    b.HasIndex("UserId");
-
                     b.ToTable("Favoris");
                 });
 
@@ -122,9 +96,6 @@ namespace ApiRessource2.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("CategorieId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreationDate")
@@ -148,6 +119,9 @@ namespace ApiRessource2.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.Property<int>("UpVote")
                         .HasColumnType("int");
 
@@ -155,8 +129,6 @@ namespace ApiRessource2.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CategorieId");
 
                     b.HasIndex("UserId");
 
@@ -234,8 +206,6 @@ namespace ApiRessource2.Migrations
                     b.HasIndex("ResourceId")
                         .IsUnique();
 
-                    b.HasIndex("UserId");
-
                     b.ToTable("Voteds");
                 });
 
@@ -276,25 +246,6 @@ namespace ApiRessource2.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ApiRessource2.Models.Consultation", b =>
-                {
-                    b.HasOne("ApiRessource2.Models.Resource", "Resource")
-                        .WithMany()
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ApiRessource2.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Resource");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ApiRessource2.Models.Favoris", b =>
                 {
                     b.HasOne("ApiRessource2.Models.Resource", "Resource")
@@ -303,32 +254,16 @@ namespace ApiRessource2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ApiRessource2.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Resource");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ApiRessource2.Models.Resource", b =>
                 {
-                    b.HasOne("ApiRessource2.Models.Categorie", "Categorie")
-                        .WithMany()
-                        .HasForeignKey("CategorieId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ApiRessource2.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Categorie");
 
                     b.Navigation("User");
                 });
@@ -341,15 +276,7 @@ namespace ApiRessource2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ApiRessource2.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Resource");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ApiRessource2.Models.Resource", b =>

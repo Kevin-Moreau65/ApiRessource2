@@ -31,7 +31,8 @@ namespace ApiRessource2.Controllers
             var user = _context.Users.SingleOrDefault(x => x.Email == model.Email);
             if (user == null)
                 return BadRequest(new { message = "Username or password is incorrect" });
-
+            if (user.IsDeleted)
+                return BadRequest(new { message = "Votre compte est suspendu" });
             var token = _userService.Authenticate(model, user);
 
             if (token == null)
@@ -157,14 +158,12 @@ namespace ApiRessource2.Controllers
             return NoContent();
         }
 
-        [Authorize]
+        [Authorize(Role.Administrator, Role.SuperAdministrator)]
         [HttpPut("unban/{id}")]
         public async Task<IActionResult> UnbanUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
             User usermod = (User)HttpContext.Items["User"];
-            if (usermod.Role == Role.Administrator || usermod.Role == Role.SuperAdministrator)
-            {
                 if (usermod == null)
                 {
                     return NotFound();
@@ -173,7 +172,6 @@ namespace ApiRessource2.Controllers
                 {
                     return NotFound();
                 }
-            }
             user.IsDeleted = false;
             _context.Users.Update(user);
             await _context.SaveChangesAsync();

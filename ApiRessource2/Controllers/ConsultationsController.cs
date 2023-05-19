@@ -26,16 +26,14 @@ namespace ApiRessource2.Controllers
             return _context.Consultations.Where(c => c.Id == id).ToList();
 
         }
-
-        // GET: api/Consultations/5
         [HttpGet("getallconsultationsbyiduser")]
         [Authorize]
-        public async Task<ActionResult<Consultation>> GetConsultationById(int id)
+        public async Task<ActionResult<List<Consultation>>>GetConsultationById(int id)
         {
             User user = (User)HttpContext.Items["User"];
             var userId = user.Id;
 
-            var consultation = await _context.Consultations.Where(c => c.UserId == userId).ToListAsync();
+            var consultation = await _context.Consultations.Where(c => c.UserId == userId).Include(c => c.Resource).ToArrayAsync();
             if (consultation == null)
                 return NotFound("L'utilisateur n'a pas été trouvé.");
 
@@ -86,7 +84,7 @@ namespace ApiRessource2.Controllers
             if (userId == null)
                 return NotFound("L'utilisateur n'a pas été trouvé.");
 
-            consultation.RessourceId = RessourceId;
+            consultation.ResourceId = RessourceId;
             consultation.Date = DateTime.Now;
             consultation.UserId = userId;
             _context.Consultations.Add(consultation);

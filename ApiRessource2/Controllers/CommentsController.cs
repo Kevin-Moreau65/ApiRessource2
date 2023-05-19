@@ -175,16 +175,6 @@ namespace ApiRessource2.Controllers
             if (comment == null)
                 return NotFound("Le commentaire n'a pas été trouvé.");
 
-            User user = (User)HttpContext.Items["User"];
-            var userId = user.Id;
-
-            if (userId == 0)
-                return NotFound("L'utilisateur n'a pas été trouvé.");
-
-            var authorizationResult = await VerifyAuthorization(comment);
-            if (authorizationResult != null)
-                return authorizationResult;
-
             comment.IsDeleted = true;
             await _context.SaveChangesAsync();
 

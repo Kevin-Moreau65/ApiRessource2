@@ -3,7 +3,6 @@ using System.Diagnostics.Eventing.Reader;
 
 namespace ApiRessource2.Models
 {
-    public enum TypeRessource { Photo, Lien, Texte, Document};
     public class Resource
     {
         public int Id { get; set; }
@@ -14,14 +13,14 @@ namespace ApiRessource2.Models
         public bool IsDeleted { get; set; }
         public int UpVote { get; set; }
         public int DownVote { get; set; }
-        public TypeRessource Type { get; set; }
+        public int CategorieId { get; set; }
+        public virtual Categorie Categorie { get; set; }
         public int UserId { get; set; }
         public virtual User User { get; set; }
 
         [ForeignKey("ResourceId")]
         public virtual ICollection<Comment> Comments { get; set; }
 
-        //[ForeignKey("ResourceId")]
         public virtual Voted Voted { get; set; }
 
         public virtual Favoris Favoris { get; set; }
