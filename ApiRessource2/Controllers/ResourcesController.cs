@@ -32,24 +32,66 @@ namespace ApiRessource2.Controllers
             {
                 var route = Request.Path.Value;
                 var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
-                IQueryable<Resource>? query;
-                if (user == null || user.Role == Role.User || user.Role == Role.Moderator)
-                {
-                    query = _context.Resources.Where(r => r.IsDeleted == false)
+                IQueryable<Resource>? query = _context.Resources.Where(r => r.IsDeleted == false)
                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
                    .Include(r => r.Categorie)
                    .AsQueryable();
-                } else
+
+                if (search != "" && search != null)
                 {
-                    query = _context.Resources
-                   .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
-                   .Take(validFilter.PageSize)
-                   .Include(r => r.User)
-                   .Include(r => r.Categorie)
-                   .AsQueryable();
+                    query = query.Where(r => r.Title.ToLower().Contains(search.ToLower()) || r.Description.ToLower().Contains(search.ToLower())).AsQueryable();
                 }
+
+                if (triType == TriType.Alphabetique)
+                {
+                    resource = await query.OrderBy(q => q.Title).ToListAsync();
+                }
+                if (triType == TriType.Popularité)
+                {
+                    resource = await query.OrderByDescending(q => q.UpVote).ToListAsync();
+                }
+                if (triType == TriType.DateAsc)
+                {
+                    resource = await query.OrderBy(q => q.CreationDate.Date).ThenBy(q => q.CreationDate.TimeOfDay).ToListAsync();
+                }
+                if (triType == TriType.DateDesc)
+                {
+                    resource = await query.OrderByDescending(q => q.CreationDate).ThenBy(q => q.CreationDate.TimeOfDay).ToListAsync();
+                }
+                foreach (var item in resource)
+                {
+                    item.User = new User() { Id = item.User.Id, Role = item.User.Role, Username = item.User.Username };
+                }
+
+                var totalRecords = resource.Count();
+                var pagedReponse = PaginationHelper.CreatePagedReponse<Resource>(resource, validFilter, totalRecords, uriService, route);
+                return Ok(pagedReponse);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // GET: api/Resources
+        [Authorize(Role.Administrator, Role.SuperAdministrator)]
+        [HttpGet("/admin")]
+        public async Task<IActionResult> GetResourcesAdmin([FromQuery] PaginationFilter filter, TriType triType, [System.Web.Http.FromUri] string? search = "")
+        {
+            User user = (User)HttpContext.Items["User"];
+            var resource = new List<Resource>();
+            try
+            {
+                var route = Request.Path.Value;
+                var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
+                var query = _context.Resources
+                   .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+                   .Take(validFilter.PageSize)
+                   .Include(r => r.User)
+                   .Include(r => r.Categorie)
+                   .AsQueryable();
 
                 if (search != "" && search != null)
                 {
@@ -180,6 +222,7 @@ namespace ApiRessource2.Controllers
                 return BadRequest();
             }
         }
+
         [Authorize(Role.Administrator, Role.SuperAdministrator)]
         [HttpPut("{id}/restore")]
         public async Task<ActionResult<Resource>> RestoreResource(int id)
@@ -193,6 +236,7 @@ namespace ApiRessource2.Controllers
             await _context.SaveChangesAsync();
             return Ok(resource);
         }
+
         // POST: api/Resources
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [Authorize]
@@ -281,7 +325,7 @@ namespace ApiRessource2.Controllers
                 }
                 else if (currentVote.Type == "upvote")
                 {
-                    return BadRequest(new {Message = "Vous avez déjà upvoter pour la ressource" });
+                    return BadRequest(new { Message = "Vous avez déjà upvoter pour la ressource" });
                 }
                 return NoContent();
             }
@@ -335,7 +379,7 @@ namespace ApiRessource2.Controllers
                     _context.Update(resourceToUpdate);
                     await _context.SaveChangesAsync();
                 }
-                else if(currentVote.Type == "downvote")
+                else if (currentVote.Type == "downvote")
                 {
                     return BadRequest(new { Message = "Vous avez déjà downvoter pour la ressource" });
                 }
@@ -346,6 +390,7 @@ namespace ApiRessource2.Controllers
                 throw new System.Web.Http.HttpResponseException(HttpStatusCode.InternalServerError);
             }
         }
+
         [HttpDelete("{id}/cancelVote")]
         [Authorize]
         public async Task<ActionResult<Favoris>> CancelVote(int id)
