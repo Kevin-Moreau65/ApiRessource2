@@ -85,7 +85,6 @@ namespace ApiRessource2.Controllers
                 var resource = await _context.Resources.AsNoTracking().Where(r => r.Id == id).Include(r => r.Categorie)
                     .Include(r => r.Comments.Where(c => !c.IsDeleted)).ThenInclude(c => c.User)
                     .Include(r => r.User)
-                    //.Include(r=>r.Voted)
                     .FirstOrDefaultAsync();
                 if (resource == null)
                 {
@@ -170,7 +169,19 @@ namespace ApiRessource2.Controllers
                 return BadRequest();
             }
         }
-
+        [Authorize(Role.Administrator, Role.SuperAdministrator)]
+        [HttpPut("{id}/restore")]
+        public async Task<ActionResult<Resource>> RestoreResource(int id)
+        {
+            var resource = await _context.Resources.FindAsync(id);
+            if (resource == null)
+            {
+                return NotFound();
+            }
+            resource.IsDeleted = false;
+            await _context.SaveChangesAsync();
+            return Ok(resource);
+        }
         // POST: api/Resources
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [Authorize]
