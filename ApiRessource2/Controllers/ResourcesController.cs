@@ -43,7 +43,7 @@ namespace ApiRessource2.Controllers
                    .AsQueryable();
                 } else
                 {
-                    query = _context.Resources.Where(r => !r.IsDeleted)
+                    query = _context.Resources.Where(r => r.IsDeleted == false)
                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
