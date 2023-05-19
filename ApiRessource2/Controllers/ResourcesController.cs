@@ -80,7 +80,6 @@ namespace ApiRessource2.Controllers
         [HttpGet("/admin")]
         public async Task<IActionResult> GetResourcesAdmin([FromQuery] PaginationFilter filter, TriType triType, [System.Web.Http.FromUri] string? search = "")
         {
-            User user = (User)HttpContext.Items["User"];
             var resource = new List<Resource>();
             try
             {
@@ -188,7 +187,7 @@ namespace ApiRessource2.Controllers
 
         // PUT: api/Resources/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [Authorize]
+        [Authorize(Role.User, Role.Administrator, Role.SuperAdministrator)]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutResource(int id, PostResource postresource)
         {
@@ -208,14 +207,12 @@ namespace ApiRessource2.Controllers
             // Mettre à jour les propriétés de la ressource existante avec les nouvelles valeurs
             resource.Title = postresource.Title;
             resource.Description = postresource.Description;
-            resource.Path = postresource.Path;
-            resource.CategorieId = postresource.CategorieId;
 
             try
             {
                 _context.Update(resource);
                 await _context.SaveChangesAsync();
-                return Ok();
+                return Ok(resource);
             }
             catch
             {

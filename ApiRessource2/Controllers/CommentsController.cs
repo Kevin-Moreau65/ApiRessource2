@@ -174,10 +174,8 @@ namespace ApiRessource2.Controllers
             var comment = await _context.Comments.FindAsync(id);
             if (comment == null)
                 return NotFound("Le commentaire n'a pas été trouvé.");
-
-            comment.IsDeleted = true;
+            _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
