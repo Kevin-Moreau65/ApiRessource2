@@ -33,9 +33,9 @@ namespace ApiRessource2.Controllers
                 var route = Request.Path.Value;
                 var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
                 IQueryable<Resource>? query;
-                if (user.Role == Role.Administrator || user.Role == Role.SuperAdministrator)
+                if (user == null || user.Role == Role.User || user.Role == Role.Moderator)
                 {
-                    query = _context.Resources
+                    query = _context.Resources.Where(r => r.IsDeleted == false)
                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
@@ -43,7 +43,7 @@ namespace ApiRessource2.Controllers
                    .AsQueryable();
                 } else
                 {
-                    query = _context.Resources.Where(r => r.IsDeleted == false)
+                    query = _context.Resources
                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
