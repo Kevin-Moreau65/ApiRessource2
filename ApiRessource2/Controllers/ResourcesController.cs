@@ -22,18 +22,17 @@ namespace ApiRessource2.Controllers
             this.uriService = uriService;
         }
 
-        //TODO route upvote et downvote
-
         // GET: api/Resources
         [HttpGet]
         public async Task<IActionResult> GetResources([FromQuery] PaginationFilter filter, TriType triType, [System.Web.Http.FromUri] string? search = "")
         {
+            User user = (User)HttpContext.Items["User"];
             var resource = new List<Resource>();
             try
             {
                 var route = Request.Path.Value;
                 var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
-                var query = _context.Resources
+                var query = _context.Resources.Where(r => (user.Role == Role.Administrator ||user.Role == Role.SuperAdministrator) || !r.IsDeleted)
                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
