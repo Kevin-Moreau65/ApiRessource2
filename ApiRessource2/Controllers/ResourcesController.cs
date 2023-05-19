@@ -32,12 +32,24 @@ namespace ApiRessource2.Controllers
             {
                 var route = Request.Path.Value;
                 var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
-                var query = _context.Resources.Where(r => (user.Role == Role.Administrator ||user.Role == Role.SuperAdministrator) || !r.IsDeleted)
+                IQueryable<Resource>? query;
+                if (user.Role == Role.Administrator || user.Role == Role.SuperAdministrator)
+                {
+                    query = _context.Resources
                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                    .Take(validFilter.PageSize)
                    .Include(r => r.User)
                    .Include(r => r.Categorie)
                    .AsQueryable();
+                } else
+                {
+                    query = _context.Resources.Where(r => !r.IsDeleted)
+                   .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+                   .Take(validFilter.PageSize)
+                   .Include(r => r.User)
+                   .Include(r => r.Categorie)
+                   .AsQueryable();
+                }
 
                 if (search != "" && search != null)
                 {
